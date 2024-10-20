@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Webpage - Main List</title>
+  <!-- Bootstrap CDN -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <style>
+    .container {
+      margin-top: 20px;
+    }
+    .text-box {
+      border: 1px solid black;
+      padding: 20px;
+      height: 200px;
+      font-size: 2em;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+    .btn-space {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Main Page for Card Decks -->
+    <h2>카드 더미 목록</h2>
+    <ul id="deck-list" class="list-group mb-4">
+      <!-- Card Decks will be added here dynamically -->
+    </ul>
+    <button id="add-deck-btn" class="btn btn-primary btn-block mb-2">카드 더미 새로 만들기</button>
+
+    <!-- Modal for editing deck names -->
+    <div class="modal fade" id="editDeckModal" tabindex="-1" role="dialog" aria-labelledby="editDeckModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">카드 더미 이름 수정</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input type="text" class="form-control" id="edit-deck-name" placeholder="새 이름을 입력하세요">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+            <button type="button" id="save-deck-name" class="btn btn-primary">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap & jQuery scripts -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  
+  <script>
+    let decks = JSON.parse(localStorage.getItem('memoryDecks')) || [];
+    let currentDeckIndex = null;
+
+    // Function to render the deck list on the main page
+    function renderDeckList() {
+      $('#deck-list').empty();
+      decks.forEach((deck, index) => {
+        $('#deck-list').append(`
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span class="deck-name" data-index="${index}">${deck.name}</span>
+            <div>
+              <button class="btn btn-warning btn-sm edit-deck" data-index="${index}">수정</button>
+              <button class="btn btn-primary btn-sm view-deck" data-index="${index}">카드 목록</button>
+            </div>
+          </li>
+        `);
+      });
+    }
+
+    // Add a new card deck
+    $('#add-deck-btn').click(function() {
+      const newDeck = {
+        name: `카드 더미 ${decks.length + 1}`,
+        cards: []
+      };
+      decks.push(newDeck);
+      localStorage.setItem('memoryDecks', JSON.stringify(decks));
+      renderDeckList();
+    });
+
+    // Open modal to edit deck name
+    $(document).on('click', '.edit-deck', function() {
+      currentDeckIndex = $(this).data('index');
+      const deckName = decks[currentDeckIndex].name;
+      $('#edit-deck-name').val(deckName);
+      $('#editDeckModal').modal('show');
+    });
+
+    // Save the new deck name
+    $('#save-deck-name').click(function() {
+      const newName = $('#edit-deck-name').val();
+      if (newName && currentDeckIndex !== null) {
+        decks[currentDeckIndex].name = newName;
+        localStorage.setItem('memoryDecks', JSON.stringify(decks));
+        $('#editDeckModal').modal('hide');
+        renderDeckList();
+      }
+    });
+
+    // Navigate to the card list (memory screen) of a specific deck
+    $(document).on('click', '.view-deck', function() {
+      const deckIndex = $(this).data('index');
+      localStorage.setItem('currentDeckIndex', deckIndex);
+      window.location.href = 'memory.html'; // 페이지 이동: memory.html로 넘어감 (암기 페이지)
+    });
+
+    // Initial render
+    renderDeckList();
+  </script>
+</body>
+</html>

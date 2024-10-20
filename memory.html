@@ -1,144 +1,206 @@
-<!-- Modal for editing cards -->
-<div class="modal fade" id="cardModal" tabindex="-1" role="dialog" aria-labelledby="cardModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">카드 수정</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="card-form">
-          <div class="form-group">
-            <label for="card-question">외울 것</label>
-            <input type="text" class="form-control" id="card-question" placeholder="외울 것을 입력하세요">
-          </div>
-          <div class="form-group">
-            <label for="card-answer">숨길 것</label>
-            <input type="text" class="form-control" id="card-answer" placeholder="숨길 것을 입력하세요">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
-        <button type="button" id="save-card-btn" class="btn btn-primary">저장</button>
-        <!-- Delete button added -->
-        <button type="button" id="delete-card-btn" class="btn btn-danger">삭제하기</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory Webpage - List View</title>
+  <!-- Bootstrap CDN -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <style>
+    .container {
+      margin-top: 20px;
+    }
+    .table tbody tr td {
+      vertical-align: middle;
+    }
+    .btn-space {
+      margin-top: 10px;
+    }
+    .answer-cell {
+      width: 200px; /* 고정된 넓이로 설정하여 버튼 위치가 유지되도록 함 */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hidden {
+      opacity: 0;
+    }
+    .mytext{
+        font-size: 2rem;
+        font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="deck-name">카드 더미 목록 보기</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>외울 것</th>
+          <th>숨길 것</th>
+          <th>보이기/숨기기</th>
+          <th>수정</th>
+          <th>삭제하기</th> <!-- 삭제하기 헤더 추가 -->
+        </tr>
+      </thead>
+      <tbody id="card-list">
+        <!-- 카드 목록이 여기에 동적으로 추가됩니다. -->
+      </tbody>
+    </table>
+
+    <!-- Buttons -->
+    <button id="add-card-btn" class="btn btn-primary btn-space">새 카드 저장하기</button>
+    <button id="random-order-btn" class="btn btn-secondary btn-space">순서 랜덤하게 보기</button>
+    <button id="original-order-btn" class="btn btn-secondary btn-space">등록 순서대로 보기</button>
+  </div>
+
+  <!-- Modal for editing cards -->
+  <div class="modal fade" id="cardModal" tabindex="-1" role="dialog" aria-labelledby="cardModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">카드 수정</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="card-form">
+            <div class="form-group">
+              <label for="card-question">외울 것</label>
+              <input type="text" class="form-control" id="card-question" placeholder="외울 것을 입력하세요">
+            </div>
+            <div class="form-group">
+              <label for="card-answer">숨길 것</label>
+              <input type="text" class="form-control" id="card-answer" placeholder="숨길 것을 입력하세요">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+          <button type="button" id="save-card-btn" class="btn btn-primary">저장</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-  let decks = JSON.parse(localStorage.getItem('memoryDecks')) || [];
-  let currentDeckIndex = localStorage.getItem('currentDeckIndex');
-  let currentDeck = decks[currentDeckIndex];
-  let currentIndex = 0;
-  let isEditing = false;
-  let editIndex = null;
-  let originalOrder = [...currentDeck.cards]; // 원래 순서를 저장
+  <!-- Bootstrap & jQuery scripts -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  
+  <script>
+    let decks = JSON.parse(localStorage.getItem('memoryDecks')) || [];
+    let currentDeckIndex = localStorage.getItem('currentDeckIndex');
+    let currentDeck = decks[currentDeckIndex];
+    let currentIndex = 0;
+    let isEditing = false;
+    let editIndex = null;
+    let originalOrder = [...currentDeck.cards]; // 원래 순서를 저장
 
-  // Set deck name
-  $('#deck-name').text(currentDeck.name);
+    // Set deck name
+    $('#deck-name').text(currentDeck.name);
 
-  // Function to render the card list
-  function renderCardList() {
-    $('#card-list').empty();
-    currentDeck.cards.forEach((card, index) => {
-      $('#card-list').append(`
-        <tr>
-          <td class='mytext'>${card.question}</td>
-          <td class="mytext answer-cell hidden">${card.answer}</td>
-          <td>
-            <button class="btn btn-sm btn-secondary toggle-answer-btn" data-index="${index}">보이기</button>
-          </td>
-          <td>
-            <button class="btn btn-sm btn-warning edit-card-btn" data-index="${index}">수정</button>
-          </td>
-        </tr>
-      `);
+    // Function to render the card list
+    function renderCardList() {
+      $('#card-list').empty();
+      currentDeck.cards.forEach((card, index) => {
+        $('#card-list').append(`
+          <tr>
+            <td class='mytext'>${card.question}</td>
+            <td class="mytext answer-cell hidden">${card.answer}</td>
+            <td>
+              <button class="btn btn-sm btn-secondary toggle-answer-btn" data-index="${index}">V</button>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-warning edit-card-btn" data-index="${index}">E</button>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-danger delete-card-btn" data-index="${index}">D</button> <!-- 삭제하기 버튼 추가 -->
+            </td>
+          </tr>
+        `);
+      });
+    }
+
+    // Toggle visibility of the answer
+    $(document).on('click', '.toggle-answer-btn', function() {
+      const index = $(this).data('index');
+      const $answerCell = $(this).closest('tr').find('.answer-cell');
+      if ($answerCell.hasClass('hidden')) {
+        $answerCell.removeClass('hidden');
+        $(this).text('숨기기');
+      } else {
+        $answerCell.addClass('hidden');
+        $(this).text('보이기');
+      }
     });
-  }
 
-  // Toggle visibility of the answer
-  $(document).on('click', '.toggle-answer-btn', function() {
-    const index = $(this).data('index');
-    const $answerCell = $(this).closest('tr').find('.answer-cell');
-    if ($answerCell.hasClass('hidden')) {
-      $answerCell.removeClass('hidden');
-      $(this).text('숨기기');
-    } else {
-      $answerCell.addClass('hidden');
-      $(this).text('보이기');
-    }
-  });
+    // Open modal for editing the card
+    $(document).on('click', '.edit-card-btn', function() {
+      editIndex = $(this).data('index');
+      const card = currentDeck.cards[editIndex];
+      $('#card-question').val(card.question);
+      $('#card-answer').val(card.answer);
+      $('#cardModal').modal('show');
+    });
 
-  // Open modal for editing the card
-  $(document).on('click', '.edit-card-btn', function() {
-    editIndex = $(this).data('index');
-    const card = currentDeck.cards[editIndex];
-    $('#card-question').val(card.question);
-    $('#card-answer').val(card.answer);
-    $('#cardModal').modal('show');
-  });
+    // Save the edited card
+    $('#save-card-btn').click(function() {
+      const question = $('#card-question').val();
+      const answer = $('#card-answer').val();
 
-  // Save the edited card
-  $('#save-card-btn').click(function() {
-    const question = $('#card-question').val();
-    const answer = $('#card-answer').val();
+      if (question && answer && editIndex !== null) {
+        currentDeck.cards[editIndex].question = question;
+        currentDeck.cards[editIndex].answer = answer;
+        localStorage.setItem('memoryDecks', JSON.stringify(decks));
+        $('#cardModal').modal('hide');
+        renderCardList();
+      }
+    });
 
-    if (question && answer && editIndex !== null) {
-      currentDeck.cards[editIndex].question = question;
-      currentDeck.cards[editIndex].answer = answer;
-      localStorage.setItem('memoryDecks', JSON.stringify(decks));
-      $('#cardModal').modal('hide');
-      renderCardList();
-    }
-  });
+    // Add a new card
+    $('#add-card-btn').click(function() {
+      $('#card-form')[0].reset();
+      isEditing = false;
+      $('#cardModal').modal('show');
+    });
 
-  // Delete the selected card
-  $('#delete-card-btn').click(function() {
-    if (editIndex !== null) {
-      currentDeck.cards.splice(editIndex, 1); // Remove the selected card
-      localStorage.setItem('memoryDecks', JSON.stringify(decks));
-      $('#cardModal').modal('hide'); // Close the modal
+    // Save the new card
+    $('#save-card-btn').click(function() {
+      const question = $('#card-question').val();
+      const answer = $('#card-answer').val();
+
+      if (question && answer && !isEditing) {
+        currentDeck.cards.push({ question, answer });
+        localStorage.setItem('memoryDecks', JSON.stringify(decks));
+        $('#cardModal').modal('hide');
+        renderCardList();
+      }
+    });
+
+    // Delete a card
+    $(document).on('click', '.delete-card-btn', function() {
+      const index = $(this).data('index');
+      currentDeck.cards.splice(index, 1); // Remove the card at the specified index
+      localStorage.setItem('memoryDecks', JSON.stringify(decks)); // Save the updated deck
       renderCardList(); // Re-render the card list
-    }
-  });
+    });
 
-  // Add a new card
-  $('#add-card-btn').click(function() {
-    $('#card-form')[0].reset();
-    isEditing = false;
-    $('#cardModal').modal('show');
-  });
-
-  // Save the new card
-  $('#save-card-btn').click(function() {
-    const question = $('#card-question').val();
-    const answer = $('#card-answer').val();
-
-    if (question && answer && !isEditing) {
-      currentDeck.cards.push({ question, answer });
-      localStorage.setItem('memoryDecks', JSON.stringify(decks));
-      $('#cardModal').modal('hide');
+    // Shuffle the card order randomly
+    $('#random-order-btn').click(function() {
+      currentDeck.cards = currentDeck.cards.sort(() => Math.random() - 0.5);
       renderCardList();
-    }
-  });
+    });
 
-  // Shuffle the card order randomly
-  $('#random-order-btn').click(function() {
-    currentDeck.cards = currentDeck.cards.sort(() => Math.random() - 0.5);
+    // Sort the cards in original order (by registration)
+    $('#original-order-btn').click(function() {
+      currentDeck.cards = [...originalOrder];  // 원래 저장된 순서로 복구
+      renderCardList();
+    });
+
+    // Initial render
     renderCardList();
-  });
-
-  // Sort the cards in original order (by registration)
-  $('#original-order-btn').click(function() {
-    currentDeck.cards = [...originalOrder];  // 원래 저장된 순서로 복구
-    renderCardList();
-  });
-
-  // Initial render
-  renderCardList();
-</script>
+  </script>
+</body>
+</html>
